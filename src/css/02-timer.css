@@ -1,0 +1,19 @@
+
+#datetime-picker {
+    padding: 10px;
+    margin-right: 10px;
+  }
+  
+  button {
+    padding: 10px 15px;
+    background-color:royalblue;
+    color:white;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
