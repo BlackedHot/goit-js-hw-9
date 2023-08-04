@@ -6,23 +6,26 @@ function getRandomHexColor() {
 
 let intervalId;
 
-function startChangingColor() {
-  const body = document.querySelector('body');
-  intervalId = setInterval(function () {
-    body.style.backgroundColor = getRandomHexColor();
-  }, 1000);
+const startButton = document.querySelector('[data-start]');
+const stopButton = document.querySelector('[data-stop]');
 
-  document.querySelector('[data-start]').disabled = true;
-}
+startButton.addEventListener('click', () => {
+  if (!intervalId) {
+    startButton.disabled = true;
+    stopButton.disabled = false;
 
-function stopChangingColor() {
-  clearInterval(intervalId);
-  document.querySelector('[data-start]').disabled = false;
-}
+    intervalId = setInterval(() => {
+      document.body.style.backgroundColor = getRandomHexColor();
+    }, 1000);
+  }
+});
 
-document
-  .querySelector('[data-start]')
-  .addEventListener('click', startChangingColor);
-document
-  .querySelector('[data-stop]')
-  .addEventListener('click', stopChangingColor);
+stopButton.addEventListener('click', () => {
+  if (intervalId) {
+    clearInterval(intervalId);
+    intervalId = null;
+
+    startButton.disabled = false;
+    stopButton.disabled = true;
+  }
+});
