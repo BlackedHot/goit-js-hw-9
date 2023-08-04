@@ -1,49 +1,70 @@
-import { Notify } from 'notiflix/build/notiflix-notify-aio';
-const NOTIFY_TIMEOUT = 5000;
+import Notiflix from 'notiflix';
 
-const promisesFormRef = document.querySelector('.form');
-
-promisesFormRef.addEventListener('submit', onPromisesFormSubmit);
-
-function createPromise(delay, position) {
-  const shouldResolve = Math.random() > 0.3;
+function createPromise(position, delay) {
   return new Promise((resolve, reject) => {
+    const shouldResolve = Math.random() > 0.3;
     setTimeout(() => {
       if (shouldResolve) {
-        // Fulfill
-        resolve(`Fulfilled promice ${position + 1} in ${delay} ms`);
+        resolve({ position, delay });
       } else {
-        // Reject
-        reject(`Rejected promice ${position + 1} in ${delay} ms`);
+        reject({ position, delay });
       }
     }, delay);
-  })
-    .then(value =>
-      Notify.success(value, {
-        timeout: NOTIFY_TIMEOUT,
-      })
-    )
-    .catch(error =>
-      Notify.failure(error, {
-        timeout: NOTIFY_TIMEOUT,
-      })
-    );
-}
-
-function createPromisesArray({ delay, step, amount }) {
-  const delaysArray = Array.from(
-    { length: amount },
-    (_, i) => delay + i * step
-  );
-  const promises = delaysArray.map(createPromise);
-}
-
-function onPromisesFormSubmit(evt) {
-  evt.preventDefault();
-  const formData = new FormData(evt.currentTarget);
-  const formDataObj = {};
-  formData.forEach((value, key) => {
-    formDataObj[key] = Number(value);
   });
-  createPromisesArray(formDataObj);
 }
+
+const form = document.querySelector('.form');
+form.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const delayInput = document.querySelector('input[name="delay"]');
+  const stepInput = document.querySelector('input[name="step"]');
+  const amountInput = document.querySelector('input[name="amount"]');
+  const firstDelay = parseInt(delayInput.value);
+  const delayStep = parseInt(stepInput.value);
+  const amount = parseInt(amountInput.value);
+
+  for (let i = 0; i < amount; i++) {
+    const position = i + 1;
+    const currentDelay = firstDelay + i * delayStep;
+
+    createPromise(position, currentDelay)
+      .then(({ position, delay }) => {
+        Notiflix.Notify.success(`✅ Fulfilled promise ${position} in ${delay}ms`);
+      })
+      .catch(({ position, delay }) => {
+        Notiflix.Notify.failure(`❌ Rejected promise ${position} in ${delay}ms`);
+      });
+  }
+});
+
+async function processPromises(amount, delay) {
+  for (let i = 0; i < amount; i++) {
+    const position = i + 1;
+    try {
+      const result = await createPromise(position, delay);
+      Notiflix.Notify.success(`✅ Fulfilled promise ${result.position} in ${result.delay}ms`);
+    } catch (error) {
+      Notiflix.Notify.failure(`❌ Rejected promise ${error.position} in ${error.delay}ms`);
+    }
+  }
+}
+
+async function runPromises() {
+  for (let i = 0; i < amount; i++) {
+    const position = i + 1;
+    try {
+      const result = await createPromise(position, currentDelay);
+      Notiflix.Notify.success(`✅ Fulfilled promise ${result.position} in ${result.delay}ms`);
+    } catch (error) {
+      Notiflix.Notify.failure(`❌ Rejected promise ${error.position} in ${error.delay}ms`);
+    }
+    currentDelay += delayStep;
+  }
+}
+
+runPromises();
+
+
+
+
+

@@ -1,90 +1,95 @@
-import flatpickr from 'flatpickr';
-import Notiflix from 'notiflix';
-import { Countdown } from './countdown_timer.js';
-import 'flatpickr/dist/flatpickr.min.css';
-const NOTIFY_TIMEOUT = 5000; //ms
+import flatpickr from "flatpickr";
+import "flatpickr/dist/flatpickr.min.css";
 
-const startBtnRef = document.querySelector('button[data-start]');
-const timerRefs = {
-  days: document.querySelector('[data-days]'),
-  hours: document.querySelector('[data-hours]'),
-  minutes: document.querySelector('[data-minutes]'),
-  seconds: document.querySelector('[data-seconds]'),
-};
+const startButton = document.querySelector("[data-start]");
+const daysEl = document.querySelector("[data-days]");
+const hoursEl = document.querySelector("[data-hours]");
+const minutesEl = document.querySelector("[data-minutes]");
+const secondsEl = document.querySelector("[data-seconds]");
 
-const timer = new Countdown({ onTick: updateTimerUI });
-
-startBtnRef.disabled = true;
-startBtnRef.addEventListener('click', onStartBtnClick);
-
-const calendars = flatpickr('#datetime-picker', {
+const options = {
   enableTime: true,
   time_24hr: true,
   defaultDate: new Date(),
   minuteIncrement: 1,
-  onClose: onDataSelect,
-});
+  onClose(selectedDates) {
+    const selectedDate = selectedDates[0];
+    if (selectedDate > new Date()) {
+      startButton.removeAttribute("disabled");
+      localStorage.setItem("countdownStartTime", selectedDate);
+      updateTimer();
+    } else {
+      window.alert("Please choose a date in the future");
+      startButton.setAttribute("disabled", true);
+    }
+  },
+};
 
-function onDataSelect(selectedDates) {
-  console.log(selectedDates[0]);
-  if (selectedDates[0] < Date.now()) {
-    startBtnRef.disabled = true;
-    Notiflix.Notify.warning('Please choose a date in the future', {
-      timeout: NOTIFY_TIMEOUT,
-    });
+flatpickr("#datetime-picker", options);
+
+function addLeadingZero(value) {
+  return value < 10 ? `0${value}` : value;
+}
+
+let countdownInterval;
+
+function startTimer() {
+  clearInterval(countdownInterval);
+  const countdownStartTime = localStorage.getItem("countdownStartTime");
+  if (countdownStartTime) {
+    const selectedDate = new Date(countdownStartTime).getTime();
+    const currentDate = new Date().getTime();
+    const timeRemaining = selectedDate - currentDate;
+
+    if (timeRemaining > 0) {
+      countdownInterval = setInterval(updateTimer, 1000);
+    } else {
+      localStorage.removeItem("countdownStartTime");
+      startButton.setAttribute("disabled", true);
+    }
+
+    updateTimer();
+  }
+}
+
+function updateTimer() {
+  const countdownStartTime = localStorage.getItem("countdownStartTime");
+  if (!countdownStartTime) {
     return;
   }
-  timer.reset();
-  startBtnRef.disabled = false;
-}
 
-function onStartBtnClick() {
-  timer
-    .start(calendars.selectedDates[0])
-    .then(value => {
-      timer.reset();
-      Notiflix.Notify.success(value, {
-        timeout: NOTIFY_TIMEOUT,
-      });
-    })
-    .catch(error =>
-      Notiflix.Notify.warning(error, {
-        timeout: NOTIFY_TIMEOUT,
-      })
-    );
-  startBtnRef.disabled = true;
-}
+  const selectedDate = new Date(countdownStartTime).getTime();
+  const currentDate = new Date().getTime();
+  const timeRemaining = selectedDate - currentDate;
 
-function updateTimerUI(timeLeftMs) {
-  const timeLeft = convertMs(timeLeftMs);
-  for (const field in timerRefs) {
-    timerRefs[field].textContent = addLeadingZero(timeLeft[field]);
+  if (timeRemaining <= 0) {
+    clearInterval(countdownInterval);
+    startButton.setAttribute("disabled", true);
+    localStorage.removeItem("countdownStartTime");
+    return;
   }
+
+  const { days, hours, minutes, seconds } = convertMs(timeRemaining);
+  daysEl.textContent = addLeadingZero(days);
+  hoursEl.textContent = addLeadingZero(hours);
+  minutesEl.textContent = addLeadingZero(minutes);
+  secondsEl.textContent = addLeadingZero(seconds);
 }
+
+startButton.addEventListener("click", startTimer);
 
 function convertMs(ms) {
-  // Number of milliseconds per unit of time
   const second = 1000;
   const minute = second * 60;
   const hour = minute * 60;
   const day = hour * 24;
 
-  // Remaining days
   const days = Math.floor(ms / day);
-  // Remaining hours
   const hours = Math.floor((ms % day) / hour);
-  // Remaining minutes
   const minutes = Math.floor(((ms % day) % hour) / minute);
-  // Remaining seconds
   const seconds = Math.floor((((ms % day) % hour) % minute) / second);
 
   return { days, hours, minutes, seconds };
 }
 
-function addLeadingZero(value) {
-  const strValue = String(value);
-  if (strValue.length > 2) {
-    return strValue;
-  }
-  return strValue.padStart(2, '0');
-}
+startTimer();
